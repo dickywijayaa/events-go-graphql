@@ -73,6 +73,22 @@ var eventType = graphql.NewObject(
 			},
 			"user": &graphql.Field{
 				Type: userType,
+				Args: graphql.FieldConfigArgument{
+					"id": &graphql.ArgumentConfig{
+						Type: graphql.Int,
+					},
+				},
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					event, ok := p.Source.(Event)
+					if ok {
+						for _, user := range users {
+							if event.UserID == user.ID {
+								return user, nil
+							}
+						}
+					}
+					return nil, errors.New("user not exists.")
+				},
 			},
 			"name": &graphql.Field{
 				Type: graphql.String,
@@ -111,6 +127,29 @@ var queryType = graphql.NewObject(
 				},
 			},
 
+			// get event by id
+			// url : http://localhost:8080/api?query={event(id:1){id,user{name,gender},name,description}}
+			"event": &graphql.Field{
+				Type: eventType,
+				Description: "Get event by Id",
+				Args: graphql.FieldConfigArgument{
+					"id": &graphql.ArgumentConfig{
+						Type: graphql.Int,
+					},
+				},
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					id, ok := p.Args["id"].(int)
+					if ok {
+						for _, event := range events {
+							if id == event.ID {
+								return event, nil
+							}
+						}
+					}
+					return nil, errors.New("event not exists.")
+				},
+			},
+
 			// get user list
 			// url : http://localhost:8080/api?query={users{id,name}}
 			"users": &graphql.Field{
@@ -124,9 +163,42 @@ var queryType = graphql.NewObject(
 	},
 )
 
+var mutationType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "Mutation",
+		Fields: graphql.Fields{
+			// create new user
+			// http://localhost:8080/api?query=mutation+_{createUser(name:"Jose",gender:"Female"){id,name,gender}}
+			"createUser": &graphql.Field{
+				Type: userType,
+				Description: "insert a new user",
+				Args: graphql.FieldConfigArgument{
+					"name": &graphql.ArgumentConfig {
+						Type: graphql.String,
+					},
+					"gender": &graphql.ArgumentConfig {
+						Type: graphql.String,
+					},
+				},
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					user := User{
+						ID: users[len(users)-1].ID + 1, // auto increment id
+						Name: p.Args["name"].(string),
+						Gender: p.Args["gender"].(string),
+					}
+					users = append(users, user)
+
+					return user, nil
+				},
+			},
+		},
+	},
+)
+
 var schema, _ = graphql.NewSchema(
 	graphql.SchemaConfig{
 		Query: queryType,
+		Mutation: mutationType,
 	},
 )
 
