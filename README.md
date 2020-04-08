@@ -1,6 +1,6 @@
-# events-go-graphql
+# example-go-graphql
 
-Sample Go using Graphql
+Example Go using Graphql
 
 Hi guys, I was making an example of Go GraphQL.
 In this example, I was only use in memory data without database connection.
